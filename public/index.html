@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>UniMatch - Web-Based Project Matching</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="toast"></div>
+<div id="modal-overlay" class="modal-overlay"><div id="modal-container"></div></div>
+
+<!-- AUTH VIEW -->
+<div id="auth-view" class="screen on">
+  <div class="auth-split">
+    <div class="auth-l">
+      <div class="auth-brand"><div class="auth-bi">🎓</div>UniMatch</div>
+      <div class="auth-tag">Find your team.<br>Build your future.</div>
+      <div class="auth-pill">🏛 Üsküdar University Project Platform</div>
+    </div>
+    <div class="auth-r">
+      <div id="auth-login-view">
+        <div class="auth-ft">Welcome back</div>
+        <div class="fg"><label class="fl">University Email</label><input class="fi" id="login-email" type="email" placeholder="student@unimatch.edu"></div>
+        <div class="fg"><label class="fl">Password</label><input class="fi" id="login-password" type="password" placeholder="••••••••"></div>
+        <button class="btn btn-p btn-full" onclick="login()">Sign In</button>
+        <div style="text-align:center;margin-top:24px;font-size:15px;color:var(--text-muted)">Don't have an account? <a href="#" style="color:var(--primary);font-weight:600;text-decoration:none;" onclick="toggleAuth('register')">Register here</a></div>
+      </div>
+      
+      <div id="auth-register-view" style="display:none">
+        <div class="auth-ft">Join UniMatch</div>
+        <div class="fg">
+          <label class="fl">I am a...</label>
+          <select class="fi fsel" id="reg-role">
+            <option value="student">Student</option>
+            <option value="instructor">Instructor</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Full Name</label><input class="fi" id="reg-name" placeholder="John Doe"></div>
+        <div class="fg"><label class="fl">University Email</label><input class="fi" id="reg-email" type="email" placeholder="name@unimatch.edu"></div>
+        <div class="fg"><label class="fl">Password</label><input class="fi" id="reg-password" type="password" placeholder="••••••••"></div>
+        <button class="btn btn-p btn-full" onclick="register()">Create Account</button>
+        <div style="text-align:center;margin-top:24px;font-size:15px;color:var(--text-muted)">Already have an account? <a href="#" style="color:var(--primary);font-weight:600;text-decoration:none;" onclick="toggleAuth('login')">Sign in</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN DASHBOARD SHELL -->
+<div id="app-view" class="screen">
+  <div class="shell">
+    <div class="sb">
+      <div class="sb-logo"><div class="bi">🎓</div><div>UniMatch</div></div>
+      <div class="sb-user">
+        <div class="av" id="nav-av">U</div>
+        <div>
+          <div class="sb-un" id="nav-name">User Name</div>
+          <div class="sb-ud" id="nav-role">Role</div>
+        </div>
+      </div>
+      <div class="sb-nav" id="sidebar-nav">
+        <!-- Injected dynamically via JS based on role -->
+      </div>
+    </div>
+    <div class="content">
+      <div class="topbar">
+        <div class="tb-title" id="page-title">Dashboard</div>
+        <div class="tb-right" style="display:flex; align-items:center; gap:20px;">
+          <div class="notif-wrapper" style="position:relative; cursor:pointer;" onclick="toggleNotifs()">
+            <div style="font-size:20px;">🔔</div>
+            <div id="notif-badge" style="position:absolute; top:-4px; right:-6px; background:var(--danger); color:white; font-size:10px; font-weight:bold; border-radius:10px; padding:2px 6px; display:none;">0</div>
+            <div id="notif-dropdown" style="display:none; position:absolute; right:0; top:36px; width:300px; background:white; border:1px solid var(--border-color); border-radius:var(--radius-md); box-shadow:var(--shadow-md); z-index:100; max-height:400px; overflow-y:auto;">
+               <div style="padding:12px; font-weight:600; border-bottom:1px solid var(--border-color); color:var(--text-main);">Notifications</div>
+               <div id="notif-list"></div>
+            </div>
+          </div>
+          <button class="btn btn-o btn-sm" onclick="logout()">Sign Out</button>
+        </div>
+      </div>
+      
+      <div id="main-content" class="page">
+        <!-- Views are injected here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
