@@ -1,5 +1,373 @@
 # 🎓 UniMatch — Web-Based Project Matching & Team Formation Platform
 
+UniMatch is a web-based platform that makes it easy for university students to create projects, build teams, and find academic advisors.
+
+---
+
+## 📋 Table of Contents
+
+1. [Project Overview](#-project-overview)
+2. [Technologies Used](#-technologies-used)
+3. [Project Architecture](#-project-architecture)
+4. [File Structure and Descriptions](#-file-structure-and-descriptions)
+5. [Database Schema](#-database-schema)
+6. [API Endpoint Summary](#-api-endpoint-summary)
+7. [Installation and Running](#-installation-and-running)
+8. [Test Users (Pre-configured Accounts)](#-test-users-pre-configured-accounts)
+9. [User Roles and Permissions](#-user-roles-and-permissions)
+
+---
+
+## 🎯 Project Overview
+
+UniMatch has three core user roles:
+
+| Role | Description |
+|---|---|
+| **Admin** | System administration, category/announcement management, user management |
+| **Instructor** | Accepting/rejecting advisor requests, project academic advising |
+| **Student** | Creating projects, applying to projects, building teams, searching for advisors |
+
+**Supported Project Categories:**
+- Course Project
+- TÜBİTAK Student Project
+- Teknofest Student Project
+
+---
+
+## 🛠 Technologies Used
+
+| Layer | Technology | Description |
+|---|---|---|
+| **Backend** | Node.js + Express.js v5 | REST API server |
+| **Database** | SQLite3 | File-based relational database |
+| **Authentication** | JSON Web Token (JWT) | Stateless session management |
+| **Password Security** | bcryptjs | Password hashing (salt rounds: 10) |
+| **CORS** | cors | Cross-origin request support |
+| **Frontend** | Vanilla HTML + CSS + JavaScript | SPA (Single Page Application) |
+| **Testing** | Playwright | E2E test automation |
+
+---
+
+## 🏗 Project Architecture
+
+```
+[Browser (SPA)]
+      │
+      │  HTTP / REST API (JSON)
+      ▼
+[Express.js Server — server.js]
+      │
+      ├── /api/auth        ← Authentication
+      ├── /api/admin       ← Admin operations
+      ├── /api/student     ← Student operations
+      ├── /api/instructor  ← Instructor operations
+      └── /api/notifications ← Notification retrieval
+      │
+      ▼
+[SQLite3 Database — unimatch.db]
+```
+
+**Workflow:**
+1. The user opens `index.html` → all UI is managed dynamically by `app.js` (SPA).
+2. After login, a JWT token is received and saved in `localStorage`.
+3. For every API request, the token is sent in the `Authorization: Bearer <token>` header.
+4. `authMiddleware.js` verifies the token and checks in real-time whether the user is active in the database.
+5. Routes restrict access based on roles (`requireRole`).
+
+---
+
+## 📁 File Structure and Descriptions
+
+```
+Unimatch/
+│
+├── server.js                 # Main server file. Starts the Express app, defines middlewares and routes. PORT: 3000
+│
+├── database.js               # Database connection and table creation (initDB). Automatically creates tables, default categories, and admin user on first run.
+│
+├── authMiddleware.js         # JWT verification middleware.
+│                             # authenticateToken: Verifies the token and checks user status in real-time.
+│                             # requireRole: Restricts access to specific roles.
+│
+├── seed.js                   # Populates the database with demo data (12 instructors, 25 students, 8 projects, 3 applications, 3 announcements). Password: pass123
+│
+├── check_users.js            # Helper script. Lists the email and roles of all users in the DB. Used for debugging.
+│
+├── run_tests.js              # Automated E2E test runner with Playwright.
+│
+├── test_all_functions.js     # Script testing all API functions.
+│
+├── package.json              # Project dependencies and metadata.
+├── unimatch.db               # SQLite database file (automatically created).
+│
+├── routes/                   # API Route definitions (where operations occur)
+│   ├── auth.js               # POST /register, POST /login
+│   ├── admin.js              # Category CRUD, Announcement CRUD, User management, System metrics (GET /metrics)
+│   ├── student.js            # Profile, project listing/creation, applications, advisor search & requests, task management, student search, invites, member removal
+│   ├── instructor.js         # Profile, viewing/answering advisor requests, supervised projects & team members, announcements
+│   └── notifications.js      # List notifications and mark as read
+│
+├── services/
+│   └── notification.js       # sendNotification: Single notification, notifyAllUsers: Notifications to all active users
+│
+└── public/                   # Frontend (static files served to the browser)
+    ├── index.html            # HTML skeleton for Single Page Application. Contains toast, modal, and auth/dashboard views.
+    ├── style.css             # All styling. Defines CSS variables, layout, component styles (card, button, form, sidebar, etc.).
+    └── app.js                # All frontend logic (~1400 lines). Manages login/register, role-based sidebar, view rendering, API calls, modals, and toasts.
+```
+
+---
+
+## 🗄 Database Schema
+
+| Table | Description |
+|---|---|
+| `Users` | All users (id, name, email, password_hash, role, is_active) |
+| `StudentProfiles` | Student profile details (department, year, interests, skills, GitHub/LinkedIn) |
+| `InstructorProfiles` | Instructor profile details (department, academic_title, expertise, availability) |
+| `ProjectCategories` | Project categories (Course, TÜBİTAK, Teknofest) + constraints |
+| `Announcements` | System announcements (title, description, category, creator, creation time) |
+| `Projects` | Projects (title, type, description, required skills/members, owner, advisor) |
+| `ProjectApplications` | Project applications (Pending/Accepted/Rejected) — invitations are also managed here |
+| `AdvisorRequests` | Advisor requests (Pending/Accepted/Rejected) |
+| `Notifications` | User notifications |
+| `ProjectTasks` | Project tasks (Todo/In Progress/Done) |
+
+---
+
+## 🔌 API Endpoint Summary
+
+### Auth (`/api/auth`)
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/register` | Register new user (student/instructor) |
+| POST | `/login` | Login → returns JWT token |
+
+### Admin (`/api/admin`) — Admin token required
+| Method | Endpoint | Description |
+|---|---|---|
+| GET/POST | `/categories` | List / create categories |
+| PUT/DELETE | `/categories/:id` | Update / delete category |
+| GET/POST | `/announcements` | List / publish announcements |
+| PUT/DELETE | `/announcements/:id` | Update / delete announcement |
+| GET | `/users` | List all users |
+| PUT | `/users/:id/deactivate` | Deactivate user |
+| PUT | `/users/:id/reactivate` | Reactivate user |
+| PUT | `/users/:id/role` | Change user role |
+| DELETE | `/users/:id` | Permanently delete user |
+| GET | `/metrics` | Get system statistics |
+
+### Student (`/api/student`) — Student token required
+| Method | Endpoint | Description |
+|---|---|---|
+| GET/PUT | `/profile` | View / update profile |
+| GET | `/announcements` | View announcements |
+| GET | `/projects` | List all projects (marketplace) |
+| POST | `/projects` | Create new project |
+| POST | `/projects/:id/apply` | Apply to a project |
+| GET | `/my-projects` | List own projects |
+| GET | `/my-applications` | List my applications |
+| PUT | `/my-applications/:app_id/respond` | Respond (Accept/Decline) to incoming project invitations |
+| DELETE | `/my-applications/:app_id` | Withdraw application |
+| GET | `/my-projects/incoming-applications` | View incoming project applications |
+| PUT | `/projects/:id/applications/:app_id/respond` | Accept/Reject incoming project applications |
+| GET | `/instructors` | List available advisors |
+| POST | `/projects/:id/advisor-request` | Send advisor request |
+| GET | `/my-advisor-requests` | Status of sent advisor requests |
+| DELETE | `/my-advisor-requests/:id` | Withdraw advisor request |
+| GET | `/students` | Search students (with department/skill filters) |
+| POST | `/projects/:id/invite` | Invite student to project |
+| DELETE | `/projects/:id/members/:userId` | Remove a member or advisor from the project team (Project Owner only) |
+| GET | `/my-tasks` | List tasks assigned to me |
+| GET/POST | `/projects/:id/tasks` | Project tasks |
+| PUT | `/projects/:id/tasks/:taskId` | Update task status |
+
+### Instructor (`/api/instructor`) — Instructor token required
+| Method | Endpoint | Description |
+|---|---|---|
+| GET/PUT | `/profile` | View / update profile |
+| GET | `/announcements` | View announcements |
+| GET | `/supervised-projects` | List supervised projects |
+| GET | `/supervised-projects/:id/members` | View team members of a supervised project |
+| GET | `/requests` | View incoming advisor requests |
+| PUT | `/requests/:id/respond` | Accept/Reject advisor request |
+| DELETE | `/requests/:id` | Delete advisor request |
+
+### Notifications (`/api/notifications`) — Auth required
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/` | List notifications (last 20, descending order) |
+| PUT | `/read-all` | Mark all notifications as read |
+| PUT | `/:id/read` | Mark single notification as read |
+
+---
+
+## 🚀 Installation and Running
+
+### Prerequisites
+
+- **Node.js** (v18 or higher) → Download from [nodejs.org](https://nodejs.org/)
+- **npm** (comes packaged with Node.js)
+- **Git** → Download from [git-scm.com](https://git-scm.com/)
+
+---
+
+### Step 1 — Clone the Repository
+
+```bash
+git clone https://github.com/Zana-C/Unimatch.git
+```
+
+---
+
+### Step 2 — Go to Project Directory
+
+```bash
+cd Unimatch
+```
+
+---
+
+### Step 3 — Install Dependencies
+
+```bash
+npm install
+```
+
+This creates the `node_modules` folder and downloads all necessary packages.
+
+---
+
+### Step 4 — Prepare the Database (With Demo Data)
+
+If you want to start with a **blank database**, skip this step — the database is created automatically on the first run.
+
+To populate it with demo data (12 instructors, 25 students, 8 projects, and announcements):
+
+```bash
+node seed.js
+```
+
+> ⚠️ **Caution:** Run `seed.js` only **once**. Running it multiple times will append duplicate data.
+
+---
+
+### Step 5 — Start the Server
+
+```bash
+node server.js
+```
+
+You should see this in the terminal:
+```
+Server is running on http://localhost:3000
+```
+
+---
+
+### Step 6 — Open in Browser
+
+Open your browser and navigate to:
+
+```
+http://localhost:3000
+```
+
+---
+
+## 🔑 Test Users (Pre-configured Accounts)
+
+> The password for all seed users is: **`pass123`**
+
+### Admin Account
+
+| Field | Value |
+|---|---|
+| **Email** | `admin@unimatch.edu` |
+| **Password** | `admin123` |
+| **Role** | Admin |
+
+> The admin account is created automatically even if `seed.js` is not run.
+
+---
+
+### Instructor Accounts (created via seed.js)
+
+| Name | Email | Password |
+|---|---|---|
+| Dr. Ahmet Yılmaz | `ahmet.yilmaz@unimatch.edu` | `pass123` |
+| Dr. Elif Kaya | `elif.kaya@unimatch.edu` | `pass123` |
+| Dr. Mehmet Demir | `mehmet.demir@unimatch.edu` | `pass123` |
+| Dr. Selin Aksoy | `selin.aksoy@unimatch.edu` | `pass123` |
+| Dr. Caner Bulut | `caner.bulut@unimatch.edu` | `pass123` |
+| Dr. Merve Tan | `merve.tan@unimatch.edu` | `pass123` |
+| Dr. Burak Can | `burak.can@unimatch.edu` | `pass123` |
+| Dr. Özlem Yıldız | `ozlem.yildiz@unimatch.edu` | `pass123` |
+| Dr. Deniz Kılıç | `deniz.kilic@unimatch.edu` | `pass123` |
+| Dr. Hakan Arslan | `hakan.arslan@unimatch.edu` | `pass123` |
+| Dr. Yasemin Koç | `yasemin.koc@unimatch.edu` | `pass123` |
+| Dr. Murat Aydın | `murat.aydin@unimatch.edu` | `pass123` |
+
+---
+
+### Student Accounts (created via seed.js — first 10 examples)
+
+| Name | Email | Password |
+|---|---|---|
+| Zeynep Arslan | `zeynep1@unimatch.edu` | `pass123` |
+| Caner Yildiz | `caner2@unimatch.edu` | `pass123` |
+| Merve Celik | `merve3@unimatch.edu` | `pass123` |
+| Burak Aydin | `burak4@unimatch.edu` | `pass123` |
+| Selin Bakir | `selin5@unimatch.edu` | `pass123` |
+| Emre Ozturk | `emre6@unimatch.edu` | `pass123` |
+| Aslı Kilic | `asli7@unimatch.edu` | `pass123` |
+| Mert Demir | `mert8@unimatch.edu` | `pass123` |
+| Gizem Aksoy | `gizem9@unimatch.edu` | `pass123` |
+| Onur Sahin | `onur10@unimatch.edu` | `pass123` |
+
+---
+
+## 👤 User Roles and Permissions
+
+### 🔴 Admin
+- Create, edit, and delete project categories
+- Publish, edit, and delete system-wide announcements
+- View all users
+- Change user roles
+- Deactivate / activate users
+- Permanently delete users
+- View system metrics (total users, total projects, etc.)
+
+### 🟡 Instructor
+- View and edit academic profile
+- View incoming advisor requests
+- Accept or reject advisor requests
+- View supervised projects
+- View team members of supervised projects
+- View system announcements
+
+### 🟢 Student
+- View and edit student profile
+- View system announcements
+- View and filter projects (Project Marketplace)
+- Create new projects (becomes the Project Owner)
+- Apply to projects
+- Accept or reject applications to their own project
+- Invite other students to their project team
+- Accept or reject project invitations
+- Search for advisors and send advisor requests (for TÜBİTAK/Teknofest)
+- Track advisor requests
+- Assign tasks to team members
+- View assigned tasks and update status
+
+---
+---
+
+# 🇹🇷 Türkçe Dokümantasyon
+
+# 🎓 UniMatch — Web Tabanlı Proje Eşleştirme & Ekip Kurma Platformu
+
 UniMatch, üniversite öğrencilerinin proje oluşturmasını, ekip kurmasını ve akademik danışman bulmasını kolaylaştıran web tabanlı bir platformdur.
 
 ---
@@ -82,24 +450,17 @@ UniMatch, üç temel kullanıcı rolüne sahiptir:
 ```
 Unimatch/
 │
-├── server.js                 # Ana sunucu dosyası. Express uygulamasını başlatır,
-│                             # middleware'leri ve route'ları tanımlar. PORT: 3000
+├── server.js                 # Ana sunucu dosyası. Express uygulamasını başlatır, middleware'leri ve route'ları tanımlar. PORT: 3000
 │
-├── database.js               # Veritabanı bağlantısı ve tablo oluşturma (initDB).
-│                             # Uygulama ilk çalıştığında tabloları ve varsayılan
-│                             # kategorileri + admin kullanıcısını oluşturur.
+├── database.js               # Veritabanı bağlantısı ve tablo oluşturma (initDB). Uygulama ilk çalıştığında tabloları ve varsayılan kategorileri + admin kullanıcısını oluşturur.
 │
 ├── authMiddleware.js         # JWT doğrulama middleware'i.
-│                             # authenticateToken: Token'ı doğrular, kullanıcının
-│                             # aktif olup olmadığını DB'den kontrol eder (real-time).
+│                             # authenticateToken: Token'ı doğrular, kullanıcının aktif olup olmadığını DB'den kontrol eder (real-time).
 │                             # requireRole: Belirli bir role erişimi kısıtlar.
 │
-├── seed.js                   # Veritabanını demo verilerle doldurur.
-│                             # 12 öğretim üyesi, 25 öğrenci, 8 proje,
-│                             # 3 başvuru ve 3 duyuru ekler. Şifre: pass123
+├── seed.js                   # Veritabanını demo verilerle doldurur. 12 öğretim üyesi, 25 öğrenci, 8 proje, 3 başvuru ve 3 duyuru ekler. Şifre: pass123
 │
-├── check_users.js            # Yardımcı script. DB'deki tüm kullanıcıların
-│                             # email ve rollerini listeler. Debug için kullanılır.
+├── check_users.js            # Yardımcı script. DB'deki tüm kullanıcıların email ve rollerini listeler. Debug için kullanılır.
 │
 ├── run_tests.js              # Playwright ile otomatik E2E test koşucusu.
 │
@@ -110,28 +471,18 @@ Unimatch/
 │
 ├── routes/                   # API Route tanımları (işlemlerin gerçekleştiği yer)
 │   ├── auth.js               # POST /register, POST /login
-│   ├── admin.js              # Kategori CRUD, Duyuru CRUD, Kullanıcı yönetimi,
-│   │                         # Sistem metrikleri (GET /metrics)
-│   ├── student.js            # Profil, proje listeleme/oluşturma, başvuru,
-│   │                         # danışman arama ve isteme, görev yönetimi,
-│   │                         # öğrenci arama, davet gönderme
-│   ├── instructor.js         # Profil, danışman isteklerini görme/cevaplama,
-│   │                         # danışmanlık yapılan projeler ve ekip üyeleri, duyurular
+│   ├── admin.js              # Kategori CRUD, Duyuru CRUD, Kullanıcı yönetimi, Sistem metrikleri (GET /metrics)
+│   ├── student.js            # Profil, proje listeleme/oluşturma, başvuru, danışman arama ve isteme, görev yönetimi, öğrenci arama, davet gönderme, ekip üyesi çıkarma
+│   ├── instructor.js         # Profil, danışman isteklerini görme/cevaplama, danışmanlık yapılan projeler ve ekip üyeleri, duyurular
 │   └── notifications.js      # Bildirimleri listele ve okundu olarak işaretle
 │
 ├── services/
-│   └── notification.js       # sendNotification(userId, msg, type): Tekil bildirim
-│                             # notifyAllUsers(msg, type): Tüm aktif kullanıcılara bildirim
+│   └── notification.js       # sendNotification(userId, msg, type): Tekil bildirim, notifyAllUsers(msg, type): Tüm aktif kullanıcılara bildirim
 │
 └── public/                   # Frontend (tarayıcıya gönderilen statik dosyalar)
-    ├── index.html            # Tek sayfa uygulamanın HTML iskeleti. Toast, modal
-    │                         # ve auth/dashboard view'larını içerir.
-    ├── style.css             # Tüm stil tanımları. CSS değişkenleri, layout,
-    │                         # bileşen stilleri (kart, buton, form, sidebar vb.)
-    └── app.js                # Tüm frontend mantığı (~1400 satır).
-                              # Login/register, rol bazlı sidebar, tüm view
-                              # render fonksiyonları, API çağrıları, modal/toast
-                              # yönetimi burada tanımlanır.
+    ├── index.html            # Tek sayfa uygulamanın HTML iskeleti. Toast, modal ve auth/dashboard view'larını içerir.
+    ├── style.css             # Tüm stil tanımları. CSS değişkenleri, layout, bileşen stilleri (kart, buton, form, sidebar vb.)
+    └── app.js                # Tüm frontend mantığı (~1400 satır). Login/register, rol bazlı sidebar, tüm view render fonksiyonları, API çağrıları, modal/toast yönetimi burada tanımlanır.
 ```
 
 ---
@@ -228,28 +579,20 @@ Unimatch/
 - **npm** (Node.js ile birlikte gelir)
 - **Git** → [git-scm.com](https://git-scm.com/) adresinden indirebilirsin
 
-Node.js kurulumunu doğrulamak için terminal/komut satırına şunu yaz:
-```bash
-node --version
-npm --version
-```
-
 ---
 
 ### Adım 1 — Repoyu İndir
 
 ```bash
-git clone <REPO_URL>
+git clone https://github.com/Zana-C/Unimatch.git
 ```
-
-> `<REPO_URL>` yerine GitHub'daki gerçek repo linkini yaz.
 
 ---
 
 ### Adım 2 — Proje Klasörüne Gir
 
 ```bash
-cd "-dosya yolu-"
+cd Unimatch
 ```
 
 ---
@@ -299,15 +642,13 @@ Tarayıcını aç ve şu adrese git:
 http://localhost:3000
 ```
 
-UniMatch giriş ekranı karşına gelecek. Aşağıdaki test kullanıcılarından biriyle giriş yapabilirsin.
-
 ---
 
 ### Sıfırdan Kurulum Özeti (Hızlı Referans)
 
 ```bash
-git clone <REPO_URL>
-cd "pm project - Kopya/Unimatch"
+git clone https://github.com/Zana-C/Unimatch.git
+cd Unimatch
 npm install
 node seed.js      # (isteğe bağlı — demo veri)
 node server.js
@@ -366,16 +707,6 @@ node server.js
 | Gizem Aksoy | `gizem9@unimatch.edu` | `pass123` |
 | Onur Sahin | `onur10@unimatch.edu` | `pass123` |
 
-> Toplam 25 öğrenci hesabı `seed.js` tarafından oluşturulur. Diğer öğrenciler için pattern: `{isim_küçük_harf}{sıra_no}@unimatch.edu`
-
-> ⚠️ **Not:** Veritabanında `owner.xxx@unimatch.edu`, `member.xxx@unimatch.edu` gibi timestamp'li hesaplar görünebilir. Bunlar otomatik E2E testlerinin (`run_tests.js`) oluşturduğu geçici test kullanıcılarıdır, şifreleri yoktur/önemsizdir. Sistemi kendiniz test etmek için yukarıdaki seed hesaplarını kullanın.
-
----
-
-### Yeni Hesap Oluşturma
-
-Kayıt ekranından da yeni hesap açılabilir. Admin hesapları sadece sistem tarafından oluşturulabilir, kayıt formu üzerinden admin kaydı yapılamaz.
-
 ---
 
 ## 👤 Kullanıcı Rolleri ve Yetkiler
@@ -424,7 +755,3 @@ Kayıt ekranından da yeni hesap açılabilir. Admin hesapları sadece sistem ta
   PORT=8080 node server.js
   ```
 - JWT token süresi **24 saat**'tir. Süresi dolunca tekrar giriş yapılması gerekir.
-
----
-
-*UniMatch — Üsküdar Üniversitesi | Web Tabanlı Proje Eşleştirme ve Ekip Oluşturma Platformu*
