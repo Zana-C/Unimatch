@@ -241,15 +241,18 @@ This creates the `node_modules` folder and downloads all necessary packages.
 
 ### Step 4 — Prepare the Database (With Demo Data)
 
-If you want to start with a **blank database**, skip this step — the database is created automatically on the first run.
+> 💡 **Pro-Tip:** The cloned repository **already includes** the pre-seeded SQLite database file (`unimatch.db`) by default. You can skip this step entirely and jump straight to **Step 5**!
 
-To populate it with demo data (12 instructors, 25 students, 8 projects, and announcements):
+If you want to start with a **blank database**, delete the existing `unimatch.db` file in the project folder. The blank database will be created automatically on the first run.
 
-```bash
-node seed.js
-```
+If you wish to reset the database and seed it freshly with demo data:
+1. Delete the existing `unimatch.db` file in the project folder.
+2. Run the seeding command:
+   ```bash
+   node seed.js
+   ```
 
-> ⚠️ **Caution:** Run `seed.js` only **once**. Running it multiple times will append duplicate data.
+> ⚠️ **Caution:** Run `seed.js` only **once** on a clean database. Running it multiple times will append duplicate data.
 
 ---
 
@@ -609,15 +612,18 @@ Bu komut `node_modules` klasörünü oluşturur ve gerekli tüm paketleri indiri
 
 ### Adım 4 — Veritabanını Hazırla (Demo Verilerle)
 
-Eğer **boş bir veritabanıyla** başlamak istersen bu adımı atla — veritabanı ilk çalıştırmada otomatik oluşur.
+> 💡 **Önemli İpucu:** Klonlanan proje klasörü, varsayılan olarak **zaten hazır doldurulmuş** SQLite veritabanı dosyasını (`unimatch.db`) içerir. Hiçbir işlem yapmadan doğrudan **Adım 5**'e geçebilirsiniz!
 
-Demo verilerle doldurmak için (12 öğretim üyesi, 25 öğrenci, 8 proje, duyurular):
+Eğer **boş bir veritabanıyla** başlamak isterseniz, klasördeki mevcut `unimatch.db` dosyasını silin. Boş veritabanı sunucu ilk çalıştığında otomatik olarak oluşturulacaktır.
 
-```bash
-node seed.js
-```
+Eğer veritabanını sıfırlayıp temiz bir şekilde demo verilerle doldurmak isterseniz:
+1. Klasördeki mevcut `unimatch.db` dosyasını silin.
+2. Ardından şu komutla verileri doldurun:
+   ```bash
+   node seed.js
+   ```
 
-> ⚠️ **Dikkat:** `seed.js`'i yalnızca **bir kere** çalıştır. Tekrar çalıştırırsan mevcut veriler üzerine ekleme yapar.
+> ⚠️ **Dikkat:** `seed.js`'i yalnızca **bir kere** (ve sadece boş veritabanında) çalıştırın. Tekrar çalıştırırsanız mevcut verilerin üzerine mükerrer kayıt eklemeye çalışacaktır.
 
 ---
 
